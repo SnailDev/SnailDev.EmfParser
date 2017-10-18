@@ -15,7 +15,7 @@ namespace SnailDev.EmfParser
         public Int32 _GraphicsMode;
         public float _scaleX;
         public float _scaleY;
-        //'EMRTEXT
+        //EMRTEXT
         public Int32 _PTx;
         public Int32 _PTy;
         public Int32 _nChars;

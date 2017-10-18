@@ -63,7 +63,7 @@ namespace SnailDev.EmfParser
         public DevMode(BinaryReader FileReader)
         {
             dmDeviceName = FileReader.ReadChars(64);
-            //'FileReader.BaseStream.Seek(64, IO.SeekOrigin.Current)
+            //FileReader.BaseStream.Seek(64, IO.SeekOrigin.Current)
             dmSpecVersion = FileReader.ReadInt16();
             dmDriverVersion = FileReader.ReadInt16();
             dmSize = FileReader.ReadInt16();

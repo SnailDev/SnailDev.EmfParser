@@ -5,13 +5,13 @@ using System.Text;
 
 namespace SnailDev.EmfParser
 {
-    public class EMFSpoolfileReader
+    public class EMFSpoolParser
     {
         public int _Copies = 1; //The number of copies per page
         public int _Pages = 0;
 
         /// <summary>
-        /// 获取EMF流
+        /// get emf stream
         /// </summary>
         /// <param name="spoolFileStream"></param>
         /// <returns></returns>
@@ -27,7 +27,7 @@ namespace SnailDev.EmfParser
             spoolBinaryReader.BaseStream.Seek(-4, SeekOrigin.Current);
 
             //Read the spooler records and count the total pages
-            EMFMetaRecordHeader recNext = NextHeader(ref spoolBinaryReader);
+            EMFMetaRecordHeader recNext = NextHeader(spoolBinaryReader);
 
             while (recNext.iType != SpoolerRecordTypes.SRT_EOF)
             {
@@ -36,10 +36,10 @@ namespace SnailDev.EmfParser
                     _Pages += 1;
                 }
 
-                var emfStream = SkipAHeader(recNext, ref spoolBinaryReader);//有一个call
+                var emfStream = SkipAHeader(recNext, spoolBinaryReader);
                 if (emfStream != null) emfStreams.Add(emfStream);
 
-                recNext = NextHeader(ref spoolBinaryReader);
+                recNext = NextHeader(spoolBinaryReader);
             }
             spoolBinaryReader.Close();
             spoolFileStream.Close();
@@ -47,12 +47,12 @@ namespace SnailDev.EmfParser
             return emfStreams;
         }
 
-        public int GetTruePageCount(string SpoolFilename)
+        public int GetTruePageCount(string spoolFilename)
         {
             string ShadowFilename;
-            ShadowFilename = SpoolFilename;
+            ShadowFilename = spoolFilename;
             // Open a binary reader for the spool file;
-            FileStream SpoolFileStream = new System.IO.FileStream(SpoolFilename, FileMode.Open, FileAccess.Read);
+            FileStream SpoolFileStream = new System.IO.FileStream(spoolFilename, FileMode.Open, FileAccess.Read);
             BinaryReader SpoolBinaryReader = new BinaryReader(SpoolFileStream, System.Text.Encoding.Unicode);
             Int32 iFoo;
             iFoo = SpoolBinaryReader.ReadInt32();
@@ -62,7 +62,7 @@ namespace SnailDev.EmfParser
             }
             SpoolBinaryReader.BaseStream.Seek(-4, SeekOrigin.Current);
             //Read the spooler records and count the total pages
-            EMFMetaRecordHeader recNext = NextHeader(ref SpoolBinaryReader);
+            EMFMetaRecordHeader recNext = NextHeader(SpoolBinaryReader);
 
             while (recNext.iType != SpoolerRecordTypes.SRT_EOF)
             {
@@ -71,93 +71,96 @@ namespace SnailDev.EmfParser
                     _Pages += 1;
                 }
 
-                SkipAHeader(recNext, ref SpoolBinaryReader);//有一个call
-                recNext = NextHeader(ref SpoolBinaryReader);
+                SkipAHeader(recNext, SpoolBinaryReader);
+                recNext = NextHeader(SpoolBinaryReader);
             }
             SpoolBinaryReader.Close();
             SpoolFileStream.Close();
             return _Pages * _Copies;
         }
 
-        public EMFMetaRecordHeader NextHeader(ref BinaryReader SpoolBinaryReader)
+        public EMFMetaRecordHeader NextHeader(BinaryReader spoolBinaryReader)
         {
 
             EMFMetaRecordHeader recRet = new EMFMetaRecordHeader();
-            //\\ get the record type
-            recRet.Seek = (int)SpoolBinaryReader.BaseStream.Position;
+            // get the record type
+            recRet.Seek = (int)spoolBinaryReader.BaseStream.Position;
             try
             {
-                recRet.iType = (SpoolerRecordTypes)SpoolBinaryReader.ReadInt32();
+                recRet.iType = (SpoolerRecordTypes)spoolBinaryReader.ReadInt32();
             }
             catch (EndOfStreamException e)
             {
                 recRet.iType = SpoolerRecordTypes.SRT_EOF;
                 return new EMFMetaRecordHeader();
             }
-            //\\ Get the record size
-            recRet.nSize = SpoolBinaryReader.ReadInt32();
+            // Get the record size
+            recRet.nSize = spoolBinaryReader.ReadInt32();
             return recRet;
         }
 
-        public Stream SkipAHeader(EMFMetaRecordHeader Header, ref BinaryReader SpoolBinaryReader)
+        public Stream SkipAHeader(EMFMetaRecordHeader header, BinaryReader spoolBinaryReader)
         {
             Stream emfStream = null;
-            if (Header.nSize <= 0)
+            if (header.nSize <= 0)
             {
-                Header.nSize = 8;
+                header.nSize = 8;
             }
-            if (Header.iType == SpoolerRecordTypes.SRT_JOB_INFO)
+            if (header.iType == SpoolerRecordTypes.SRT_JOB_INFO)
             {
                 byte[] JobInfo;
-                JobInfo = SpoolBinaryReader.ReadBytes(Header.nSize);
-                SpoolBinaryReader.BaseStream.Seek(Header.Seek + Header.nSize, SeekOrigin.Begin);
+                JobInfo = spoolBinaryReader.ReadBytes(header.nSize);
+                spoolBinaryReader.BaseStream.Seek(header.Seek + header.nSize, SeekOrigin.Begin);
             }
-            else if (Header.iType == SpoolerRecordTypes.SRT_EOF)
+            else if (header.iType == SpoolerRecordTypes.SRT_EOF)
             {
-                //\\ End of file reached..do nothing
+                // End of file reached..do nothing
             }
-            else if (Header.iType == SpoolerRecordTypes.SRT_DEVMODE)
+            else if (header.iType == SpoolerRecordTypes.SRT_DEVMODE)
             {
-                //'\\ Spool job DEVMODE
-                DevMode _dmThis = new DevMode(SpoolBinaryReader);
+                // Spool job DEVMODE
+                DevMode _dmThis = new DevMode(spoolBinaryReader);
                 _Copies = _dmThis.Copies;
-                SpoolBinaryReader.BaseStream.Seek(Header.Seek + 8 + Header.nSize, SeekOrigin.Begin);
+                spoolBinaryReader.BaseStream.Seek(header.Seek + 8 + header.nSize, SeekOrigin.Begin);
             }
-            else if (Header.iType == SpoolerRecordTypes.SRT_PAGE || Header.iType == SpoolerRecordTypes.SRT_EXT_PAGE)
+            else if (header.iType == SpoolerRecordTypes.SRT_PAGE || header.iType == SpoolerRecordTypes.SRT_EXT_PAGE)
             {
-                //\\ 
-                // ProcessEMFRecords(Header, SpoolBinaryReader);//有一个call
+                // 
+                // ProcessEMFRecords(Header, SpoolBinaryReader);
                 // EMFPage ThisPage = new EMFPage(SpoolBinaryReader);
-                emfStream = GetEMFStream(SpoolBinaryReader);
+                emfStream = GetEMFStream(spoolBinaryReader);
             }
-            else if (Header.iType == SpoolerRecordTypes.SRT_EOPAGE1 || Header.iType == SpoolerRecordTypes.SRT_EOPAGE2)
+            else if (header.iType == SpoolerRecordTypes.SRT_EOPAGE1 || header.iType == SpoolerRecordTypes.SRT_EOPAGE2)
             {
-                //'\\ int plus long
-                if (Header.nSize == 0x8)
+                // int plus long
+                if (header.nSize == 0x8)
                 {
-                    SpoolBinaryReader.BaseStream.Seek(Header.Seek + Header.nSize + 8, SeekOrigin.Begin);
+                    spoolBinaryReader.BaseStream.Seek(header.Seek + header.nSize + 8, SeekOrigin.Begin);
                 }
             }
-            else if (Header.iType == SpoolerRecordTypes.SRT_UNKNOWN)
+            else if (header.iType == SpoolerRecordTypes.SRT_UNKNOWN)
             {
-                SpoolBinaryReader.BaseStream.Seek(Header.Seek + 4, SeekOrigin.Begin);
+                spoolBinaryReader.BaseStream.Seek(header.Seek + 4, SeekOrigin.Begin);
             }
             else
             {
-                SpoolBinaryReader.BaseStream.Seek(Header.Seek + Header.nSize, SeekOrigin.Begin);
+                spoolBinaryReader.BaseStream.Seek(header.Seek + header.nSize, SeekOrigin.Begin);
             }
 
             return emfStream;
         }
 
-        public Stream GetEMFStream(BinaryReader FileReader)
+        public Stream GetEMFStream(BinaryReader spoolBinaryReader)
         {
-            long oldPos = FileReader.BaseStream.Position;
-            var _header = new EMFHeader(FileReader);
-            FileReader.BaseStream.Seek(oldPos, SeekOrigin.Begin);
+            long oldPos = spoolBinaryReader.BaseStream.Position;
 
-            //'\\ get a stream for just this emf record...
-            return new MemoryStream(FileReader.ReadBytes(_header.FileSize), false);
+            var header = new EMFHeader(spoolBinaryReader);
+            // spoolBinaryReader.BaseStream.Seek(oldPos, SeekOrigin.Begin);
+            // var record = new EMFRecord(spoolBinaryReader);
+            spoolBinaryReader.BaseStream.Seek(oldPos, SeekOrigin.Begin);
+
+            // get a stream for just this emf record...
+            return new MemoryStream(spoolBinaryReader.ReadBytes(header.FileSize), false);
         }
     }
 }
