@@ -38,9 +38,7 @@
   <ItemGroup>
     <Compile Include="Types\DevMode.cs" />
     <Compile Include="Header\EMFHeader.cs" />
-    <Compile Include="Record\EMFRecord.cs" />
     <Compile Include="EMFSpoolParser.cs" />
-    <Compile Include="Record\EMFTextRecord.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Types\SpoolerRecordTypes.cs" />
   </ItemGroup>

@@ -125,9 +125,6 @@ namespace SnailDev.EmfParser
             }
             else if (header.iType == SpoolerRecordTypes.SRT_PAGE || header.iType == SpoolerRecordTypes.SRT_EXT_PAGE)
             {
-                // 
-                // ProcessEMFRecords(Header, SpoolBinaryReader);
-                // EMFPage ThisPage = new EMFPage(SpoolBinaryReader);
                 emfStream = GetEMFStream(spoolBinaryReader);
             }
             else if (header.iType == SpoolerRecordTypes.SRT_EOPAGE1 || header.iType == SpoolerRecordTypes.SRT_EOPAGE2)
@@ -155,8 +152,6 @@ namespace SnailDev.EmfParser
             long oldPos = spoolBinaryReader.BaseStream.Position;
 
             var header = new EMFHeader(spoolBinaryReader);
-            // spoolBinaryReader.BaseStream.Seek(oldPos, SeekOrigin.Begin);
-            // var record = new EMFRecord(spoolBinaryReader);
             spoolBinaryReader.BaseStream.Seek(oldPos, SeekOrigin.Begin);
 
             // get a stream for just this emf record...
